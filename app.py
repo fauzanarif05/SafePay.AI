@@ -73,18 +73,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Fungsi untuk memuat model Random Forest dan scaler
+# Fungsi untuk memuat model XGBoost dan scaler
 @st.cache_resource
 def load_model_and_scaler():
     try:
-        # Memuat model Random Forest yang sudah dilatih
-        model = joblib.load('rf_model.pkl')
+        # Memuat model XGBoost yang sudah dilatih
+        model = joblib.load('xgb_model.pkl')
         # Memuat scaler yang digunakan saat training
         scaler = joblib.load('scaler.pkl')
         return model, scaler, True
     except FileNotFoundError as e:
         st.error(f"❌ File model tidak ditemukan: {e}")
-        st.error("Pastikan file 'rf_model.pkl' dan 'scaler.pkl' tersedia di direktori yang sama")
+        st.error("Pastikan file 'xgb_model.pkl' dan 'scaler.pkl' tersedia di direktori yang sama")
         
         # Fallback ke mock model untuk demo
         class MockModel:
@@ -159,7 +159,7 @@ def main():
     
     # # Status model
     # if model_loaded:
-    #     st.sidebar.success("✅ Model Random Forest berhasil dimuat")
+    #     st.sidebar.success("✅ Model XGBoost berhasil dimuat")
     # else:
     #     st.sidebar.warning("⚠️ Menggunakan mock model untuk demo")
     
@@ -420,60 +420,60 @@ def show_variable_analysis():
     <div class="feature-card">
         <h3>🔍 Variabel yang Mempengaruhi Deteksi Penipuan Online</h3>
         <p>Sistem SafePay.AI menganalisis berbagai variabel untuk mendeteksi pola penipuan. 
-        Berikut adalah penjelasan detail setiap variabel:</p>
+        Berikut adalah penjelasan detail setiap variabel berdasarkan analisis Feature Importance dari model XGBoost:</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Definisi variabel berdasarkan Tabel 2 dan Feature Importance dari RandomForestClassifier
+    # Definisi variabel berdasarkan gambar Feature Importance XGBoost
     variables = {
-        "Step": {
-            "icon": "⏰",
-            "description": "Merepresentasikan satuan waktu transaksi, di mana 1 step setara dengan 1 jam sejak awal pencatatan data",
+        "NewbalanceOrig": {
+            "icon": "📊",
+            "description": "Saldo akun pengirim (original) setelah transaksi selesai",
             "importance": "Sangat Tinggi",
-            "importance_score": 0.37,
-            "fraud_pattern": "Pola waktu transaksi mencurigakan sering terjadi pada jam-jam tertentu atau dalam rentang waktu yang tidak biasa"
-        },
-        "Type": {
-            "icon": "💳",
-            "description": "Jenis transaksi online yang dilakukan (PAYMENT, TRANSFER, CASH-IN, CASH-OUT, DEBIT)",
-            "importance": "Tinggi", 
-            "importance_score": 0.19,
-            "fraud_pattern": "CASH-OUT dan TRANSFER memiliki risiko penipuan lebih tinggi dibandingkan jenis transaksi lainnya"
+            "importance_score": 0.44,
+            "fraud_pattern": "Perubahan saldo yang tidak konsisten dengan amount transaksi atau pola manipulasi saldo bisa mengindikasikan penipuan"
         },
         "OldbalanceOrg": {
             "icon": "🏦",
             "description": "Saldo akun pengirim (original) sebelum transaksi dilakukan",
-            "importance": "Sedang",
-            "importance_score": 0.14,
-            "fraud_pattern": "Ketidaksesuaian antara saldo awal dengan kemampuan melakukan transaksi bisa mencurigakan"
+            "importance": "Tinggi", 
+            "importance_score": 0.19,
+            "fraud_pattern": "Ketidaksesuaian antara saldo awal dengan kemampuan melakukan transaksi besar bisa mencurigakan"
         },
-        "NewbalanceOrig": {
-            "icon": "📊",
-            "description": "Saldo akun pengirim (original) setelah transaksi selesai",
-            "importance": "Sedang", 
-            "importance_score": 0.12,
-            "fraud_pattern": "Perubahan saldo yang tidak konsisten dengan amount transaksi bisa mengindikasikan manipulasi"
+        "Type": {
+            "icon": "💳",
+            "description": "Jenis transaksi online yang dilakukan (PAYMENT, TRANSFER, CASH-IN, CASH-OUT, DEBIT)",
+            "importance": "Tinggi",
+            "importance_score": 0.18,
+            "fraud_pattern": "CASH-OUT dan TRANSFER memiliki risiko penipuan lebih tinggi dibandingkan jenis transaksi lainnya"
         },
         "Amount": {
             "icon": "💰",
             "description": "Jumlah nominal uang yang terlibat pada transaksi",
             "importance": "Sedang",
-            "importance_score": 0.07,
+            "importance_score": 0.15,
             "fraud_pattern": "Transaksi dengan jumlah sangat besar atau pola jumlah yang tidak wajar bisa mengindikasikan penipuan"
-        },
-        "OldbalanceDest": {
-            "icon": "🎯",
-            "description": "Saldo penerima (destination) sebelum transaksi diterima",
-            "importance": "Rendah",
-            "importance_score": 0.04,
-            "fraud_pattern": "Rekening penerima dengan saldo 0 yang tiba-tiba menerima transfer besar perlu diwaspadai"
         },
         "NewbalanceDest": {
             "icon": "📈",
             "description": "Saldo penerima (destination) setelah transaksi diterima",
             "importance": "Rendah",
-            "importance_score": 0.02,
+            "importance_score": 0.04,
             "fraud_pattern": "Pola akumulasi dana yang tidak wajar dalam waktu singkat pada rekening penerima"
+        },
+        "Step": {
+            "icon": "⏰",
+            "description": "Merepresentasikan satuan waktu transaksi, di mana 1 step setara dengan 1 jam sejak awal pencatatan data",
+            "importance": "Sangat Rendah",
+            "importance_score": 0.003,
+            "fraud_pattern": "Pola waktu transaksi mencurigakan pada jam-jam tertentu atau dalam rentang waktu yang tidak biasa"
+        },
+        "OldbalanceDest": {
+            "icon": "🎯",
+            "description": "Saldo penerima (destination) sebelum transaksi diterima",
+            "importance": "Sangat Rendah",
+            "importance_score": 0.002,
+            "fraud_pattern": "Rekening penerima dengan saldo 0 yang tiba-tiba menerima transfer besar perlu diwaspadai"
         }
     }
     
@@ -481,7 +481,7 @@ def show_variable_analysis():
     sorted_variables = dict(sorted(variables.items(), key=lambda x: x[1]['importance_score'], reverse=True))
     
     for var_name, var_info in sorted_variables.items():
-        with st.expander(f"{var_info['icon']} {var_name} - Importance Score: {var_info['importance_score']:.2f} ({var_info['importance']})"):
+        with st.expander(f"{var_info['icon']} {var_name} - Importance Score: {var_info['importance_score']:.3f} ({var_info['importance']})"):
             col1, col2 = st.columns([2, 1])
             
             with col1:
@@ -494,27 +494,29 @@ def show_variable_analysis():
                 st.progress(var_info['importance_score'])
                 
                 # Color coding berdasarkan importance
-                if var_info['importance_score'] >= 0.3:
+                if var_info['importance_score'] >= 0.40:
                     st.success("🔥 Sangat Penting")
-                elif var_info['importance_score'] >= 0.1:
+                elif var_info['importance_score'] >= 0.15:
                     st.info("⚡ Penting")
+                elif var_info['importance_score'] >= 0.05:
+                    st.warning("📊 Kontribusi Sedang")
                 else:
-                    st.warning("📊 Kontribusi Kecil")
+                    st.error("📉 Kontribusi Minimal")
     
-    # Visualisasi importance berdasarkan data aktual dari RandomForestClassifier
-    st.markdown("### 📊 Feature Importance dari Model RandomForestClassifier")
+    # Visualisasi importance berdasarkan data aktual dari XGBoost
+    st.markdown("### 📊 Feature Importance dari Model XGBoost")
     
-    # Data sesuai dengan chart yang diberikan
-    var_names = ['step', 'type', 'oldbalanceOrg', 'newbalanceOrig', 'amount', 'oldbalanceDest', 'newbalanceDest']
-    importance_values = [0.37, 0.19, 0.14, 0.12, 0.07, 0.04, 0.02]
+    # Data sesuai dengan gambar yang diberikan
+    var_names = ['newbalanceOrig', 'oldbalanceOrg', 'type', 'amount', 'newbalanceDest', 'step', 'oldbalanceDest']
+    importance_values = [0.44, 0.19, 0.18, 0.15, 0.04, 0.003, 0.002]
     
     fig = px.bar(
         x=importance_values,
         y=var_names,
         orientation='h',
-        title="Feature Importance Score dari Model RandomForestClassifier",
+        title="Feature Importance Score dari Model XGBoost",
         color=importance_values,
-        color_continuous_scale="Blues",
+        color_continuous_scale="RdYlBu_r",  # Skema warna yang lebih menarik
         text=[f"{val:.3f}" for val in importance_values]
     )
     
@@ -522,41 +524,45 @@ def show_variable_analysis():
         xaxis_title="Importance Score",
         yaxis_title="Variabel",
         height=500,
-        yaxis={'categoryorder': 'total ascending'}  # Mengurutkan dari terkecil ke terbesar
+        yaxis={'categoryorder': 'total ascending'},  # Mengurutkan dari terkecil ke terbesar
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
     )
     
     fig.update_traces(textposition='outside')
     
     st.plotly_chart(fig, use_container_width=True)
     
-    # Insight tambahan
-    st.markdown("### 💡 Insights dari Feature Importance:")
+    # Insight tambahan berdasarkan data XGBoost
+    st.markdown("### 💡 Insights dari Feature Importance XGBoost:")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.info("""
-        **🏆 Top 3 Features:**
-        1. **Step** (0.370) - Waktu transaksi
-        2. **Type** (0.190) - Jenis transaksi  
-        3. **OldbalanceOrg** (0.140) - Saldo pengirim awal
+        **🏆 Top 4 Features:**
+        1. **NewbalanceOrig** (0.440) - Saldo pengirim akhir
+        2. **OldbalanceOrg** (0.190) - Saldo pengirim awal  
+        3. **Type** (0.180) - Jenis transaksi
+        4. **Amount** (0.150) - Nominal transaksi
         """)
     
     with col2:
         st.warning("""
-        **⚖️ Features Sedang:**
-        4. **NewbalanceOrig** (0.120)
-        5. **Amount** (0.070)
+        **⚖️ Features Minor:**
+        5. **NewbalanceDest** (0.040)
+        6. **Step** (0.003)
+        7. **OldbalanceDest** (0.002)
         
-        Tetap berkontribusi dalam prediksi
+        Kontribusi minimal dalam prediksi
         """)
     
     with col3:
         st.success("""
-        **📈 Model Insights:**
-        - **Step** adalah prediktor terkuat
-        - **Saldo penerima** kurang berpengaruh
-        - **Kombinasi features** memberikan akurasi optimal
+        **📈 XGBoost Insights:**
+        - **Balance tracking** adalah kunci utama
+        - **Waktu transaksi** kurang berpengaruh
+        - **Pattern saldo** lebih penting dari timing
         """)
 
 def show_prediction(model, scaler, model_loaded):
@@ -566,14 +572,14 @@ def show_prediction(model, scaler, model_loaded):
     <div class="feature-card">
         <h3>💡 Cara Penggunaan</h3>
         <p>Masukkan detail transaksi pada form di bawah ini. Sistem akan menganalisis data 
-        menggunakan algoritma Random Forest untuk memprediksi apakah transaksi tersebut 
+        menggunakan algoritma XGBoost untuk memprediksi apakah transaksi tersebut 
         terindikasi penipuan atau tidak.</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Status model
     if model_loaded:
-        st.success("🚀 **Model Random Forest Aktif** - Menggunakan model yang telah dilatih")
+        st.success("🚀 **Model XGBoost Aktif** - Menggunakan model yang telah dilatih")
     else:
         st.warning("⚠️ **Mode Demo** - Menggunakan simulasi model untuk demonstrasi")
     
@@ -582,11 +588,38 @@ def show_prediction(model, scaler, model_loaded):
     
     with col1:
         st.markdown("### 📝 Data Transaksi")
-        step = st.number_input(
-            "⏰ Step (Satuan Waktu Transaksi)", 
-            min_value=0, max_value=1000, value=1,
-            help="1 step = 1 jam sejak awal pencatatan data"
+        
+        # Input tanggal dan jam untuk step
+        st.markdown("#### 🗓️ Waktu Transaksi")
+        
+        # Pilihan tanggal (1-31 untuk 1 bulan)
+        transaction_day = st.selectbox(
+            "📅 Tanggal Transaksi",
+            options=list(range(1, 32)),
+            index=0,
+            help="Pilih tanggal transaksi (1-31 hari dalam bulan)"
         )
+        
+        # Pilihan jam (0-23)
+        transaction_hour = st.selectbox(
+            "🕐 Jam Transaksi",
+            options=list(range(0, 24)),
+            index=12,
+            help="Pilih jam transaksi (0-23)"
+        )
+        
+        # Konversi tanggal dan jam ke step
+        # Formula: step = (day - 1) * 24 + hour + 1
+        # Day 1 jam 0 = step 1, Day 1 jam 23 = step 24, dst.
+        step = (transaction_day - 1) * 24 + transaction_hour + 1
+        
+        # Validasi step range (1-743)
+        if step > 743:
+            st.error(f"⚠️ Step yang dihitung ({step}) melebihi batas maksimum (743). Silakan pilih tanggal dan jam yang lebih awal.")
+            step = min(step, 743)  # Batasi ke maksimum
+        
+        # Tampilkan step yang dihitung
+        st.info(f"📊 **Step yang dihitung:** {step} (Hari {transaction_day}, Jam {transaction_hour:02d}:00)")
         
         type_ = st.selectbox(
             "💳 Jenis Transaksi", 
@@ -658,13 +691,18 @@ def show_prediction(model, scaler, model_loaded):
         )
     
     if predict_button:
+        # Validasi step sebelum prediksi
+        if step > 743:
+            st.error("❌ Tidak dapat melakukan prediksi. Pilih tanggal dan jam yang valid (Step maksimum: 743)")
+            return
+            
         # Cek apakah model tersedia
         if model is None or scaler is None:
-            st.error("❌ Model tidak dapat dimuat. Pastikan file 'rf_model.pkl' dan 'scaler.pkl' tersedia.")
+            st.error("❌ Model tidak dapat dimuat. Pastikan file 'xgb_model.pkl' dan 'scaler.pkl' tersedia.")
             return
         
         # Loading animation
-        with st.spinner('🔄 Menganalisis data transaksi dengan Random Forest...'):
+        with st.spinner('🔄 Menganalisis data transaksi dengan XGBoost...'):
             try:
                 # Simulasi loading
                 import time
@@ -694,7 +732,10 @@ def show_prediction(model, scaler, model_loaded):
                 
                 # Results
                 st.markdown("---")
-                st.markdown("## 🎯 Hasil Prediksi Random Forest")
+                st.markdown("## 🎯 Hasil Prediksi XGBoost")
+                
+                # Tampilkan informasi waktu transaksi
+                st.markdown(f"**📅 Waktu Transaksi:** Hari {transaction_day}, Jam {transaction_hour:02d}:00 (Step {step})")
                 
                 col1, col2 = st.columns(2)
                 
@@ -776,8 +817,15 @@ def show_prediction(model, scaler, model_loaded):
                 if amount > oldbalanceOrg:
                     risk_factors.append("⚠️ Jumlah transaksi melebihi saldo pengirim")
                 
-                if step > 500:  # Transaksi pada waktu yang tidak biasa
-                    risk_factors.append("⏰ Waktu transaksi di luar jam normal")
+                # Analisis waktu transaksi berdasarkan jam
+                if transaction_hour >= 0 and transaction_hour <= 5:  # Dini hari
+                    risk_factors.append("🌙 Transaksi pada dini hari (00:00-05:59)")
+                elif transaction_hour >= 22:  # Malam hari
+                    risk_factors.append("🌃 Transaksi pada malam hari (22:00-23:59)")
+                
+                # Analisis berdasarkan step yang tinggi (akhir bulan)
+                if step > 600:  # Mendekati akhir dataset (hari ke-25+)
+                    risk_factors.append("📅 Transaksi pada akhir periode (hari 25+)")
                 
                 # Tampilkan hasil analisis
                 col1, col2 = st.columns(2)
@@ -793,7 +841,8 @@ def show_prediction(model, scaler, model_loaded):
                 with col2:
                     # Summary statistics
                     st.info("**📊 Ringkasan Prediksi:**")
-                    st.write(f"• **Model:** Random Forest Classifier")
+                    st.write(f"• **Model:** XGBoost Classifier")
+                    st.write(f"• **Waktu:** Hari {transaction_day}, Jam {transaction_hour:02d}:00")
                     st.write(f"• **Prediksi:** {'Fraud' if prediction[0] == 1 else 'Bukan Fraud'}")
                     st.write(f"• **Confidence:** {confidence:.1%}")
                     st.write(f"• **Risk Level:** {len(risk_factors)} faktor risiko")
